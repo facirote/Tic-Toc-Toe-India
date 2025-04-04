@@ -1,21 +1,69 @@
-<!DOCTYPE html><html lang="en"><head>
-    <meta name="google-site-verification" content="1eMVio1MXk2RkmHdVEyMuPCH49oiJeIvKf6FuH7bDDM" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="google-site-verification" content="1eMVio1MXk2RkmHdVEyMuPCH49oiJeIvKf6FuH7bDDM" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic Tac Toe</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         body {
             text-align: center;
             font-family: Arial, sans-serif;
-            position: relative;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
         }
+        /* Intro Animation Styles */
+        .intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeOut 1s ease-out 3s forwards;
+        }
+        .intro-text {
+            color: white;
+            font-size: 3em;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+        }
+        #ka-hal-ba {
+            animation: slideInFromLeft 1s ease-out forwards;
+        }
+        #welcome-text {
+            font-size: 2em;
+            animation: slideInFromRight 1s ease-out 1s forwards;
+        }
+        @keyframes slideInFromLeft {
+            0% { transform: translateX(-100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideInFromRight {
+            0% { transform: translateX(100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+        /* Original Styles with Themed Cell Animations */
         .board {
             display: grid;
             grid-template-columns: repeat(3, 100px);
             grid-template-rows: repeat(3, 100px);
             gap: 5px;
             margin: 20px auto;
-            width: 320px;
+            width: 310px;
         }
         .cell {
             width: 100px;
@@ -23,23 +71,75 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2em;
-            background-color: #f0f0f0;
-            border: 2px solid #000;
-            cursor: pointer;
+            font-size: 2.5em;
+            font-weight: bold;
+            background-color: #fff;
+            border: 2px solid #333;
             border-radius: 10px;
+            cursor: pointer;
             transition: transform 0.2s;
+            position: relative; /* For pseudo-elements */
         }
+        .cell.x {
+            color: #e74c3c;
+            animation: rippleIn 0.5s ease-out;
+        }
+        .cell.x::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(231, 76, 60, 0.3); /* Red ripple matching X color */
+            animation: rippleEffect 0.5s ease-out forwards;
+        }
+        .cell.o {
+            color: #3498db;
+            animation: rippleIn 0.5s ease-out;
+        }
+        .cell.o::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(52, 152, 219, 0.3);
+            animation: rippleEffect 0.5s ease-out forwards;
+        }
+        @keyframes slashIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes slashEffect {
+            0% { width: 0; }
+            100% { width: 80px; }
+        }
+        @keyframes rippleIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes rippleEffect {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(4); opacity: 0; }
+        }
+        .cell:hover:not(.disabled) { background-color: #e0e0e0; }
+        .cell.disabled { cursor: default; background-color: #f0f0f0; }
         .winner {
-            animation: winAnimation 1s infinite alternate;
+            animation: winAnimation 1s 3 alternate;
+            background-color: #ffeb3b;
         }
         @keyframes winAnimation {
             0% { background-color: #ffeb3b; transform: scale(1); }
             100% { background-color: #ffc107; transform: scale(1.1); }
         }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
         .message, .scoreboard {
             font-size: 1.5em;
-            margin: 10px;
+            margin: 15px;
+            color: #555;
         }
         .restart-button {
             padding: 12px 25px;
@@ -50,17 +150,38 @@
             border: none;
             border-radius: 20px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: transform 0.3s, background 0.3s, box-shadow 0.3s;
         }
         .restart-button:hover {
             background: linear-gradient(45deg, #e74c3c, #ff4500);
-            transform: scale(1.05);
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .username-input label { margin: 0 10px; }
+        .insta-link {
+            color: #e4405f;
+            font-weight: bold;
+            text-decoration: none;
+            transition: transform 0.3s;
+        }
+        .insta-link:hover {
+            transform: scale(1.1);
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
+    <!-- Audio Elements -->
+    <audio id="introMusic" src="https://www.soundjay.com/music/magic-wand-1.mp3"></audio>
+    <audio id="bgMusic" loop src="https://www.soundjay.com/music/midnight-ride-1.mp3"></audio>
+    <!-- Intro Animation -->
+    <div class="intro-overlay">
+        <div class="intro-text" id="ka-hal-ba">Ka Hal Ba!</div>
+        <div class="intro-text" id="welcome-text">Welcome To Your Favourite Game</div>
+    </div>
+    <!-- Original Content -->
     <h1>Tic Tac Toe</h1>
-    <p>Follow me on Instagram: <a href="https://www.instagram.com/anmol.gond.351" target="_blank">anmol.gond.351</a></p>
+    <p>🌟 Hey champs! Want more epic games and fun vibes? Follow me on Instagram at <a href="https://www.instagram.com/anmol.gond.351" target="_blank" class="insta-link">anmol.gond.351</a> – let’s level up the excitement together! 🚀</p>
     <div class="username-input">
         <label>Player X Name: <input type="text" id="playerXName" placeholder="Enter name"></label>
         <label>Player O Name: <input type="text" id="playerOName" placeholder="Enter name"></label>
@@ -72,7 +193,8 @@
         <div class="score" id="playerOScore">Player O: 0</div>
     </div>
     <div class="board" id="board"></div>
-    <button class="restart-button" onclick="resetGame()">?? Restart Game</button>
+    <button class="restart-button" onclick="resetGame()">🔄 Restart Game</button>
+
     <script>
         let playerX = "Player X";
         let playerO = "Player O";
@@ -83,82 +205,124 @@
         const message = document.getElementById("message");
         const playerXScoreEl = document.getElementById("playerXScore");
         const playerOScoreEl = document.getElementById("playerOScore");
-        let cells = [];function setNames() {
-        playerX = document.getElementById("playerXName").value || "Player X";
-        playerO = document.getElementById("playerOName").value || "Player O";
-        updateScoreboard();
-    }
+        let cells = [];
 
-    function updateScoreboard() {
-        playerXScoreEl.textContent = `${playerX}: ${scores.X}`;
-        playerOScoreEl.textContent = `${playerO}: ${scores.O}`;
-    }
+        const clickSoundURL = "https://www.soundjay.com/buttons/button-3.mp3";
+        const winSound = new Audio("https://www.soundjay.com/misc/ding-1.mp3");
+        const drawSound = new Audio("https://www.soundjay.com/misc/whoosh-1.mp3");
+        const introMusic = document.getElementById("introMusic");
+        const bgMusic = document.getElementById("bgMusic");
 
-    function createBoard() {
-        board.innerHTML = "";
-        cells = [];
-        for (let i = 0; i < 9; i++) {
-            const cell = document.createElement("div");
-            cell.classList.add("cell");
-            cell.dataset.index = i;
-            cell.addEventListener("click", handleCellClick);
-            board.appendChild(cell);
-            cells.push(cell);
-        }
-    }
+        // Audio Settings
+        introMusic.volume = 0.5;
+        bgMusic.volume = 0.2;
 
-    function handleCellClick(event) {
-        if (!gameActive) return;
-        const cell = event.target;
-        if (cell.textContent !== "") return;
-        
-        cell.textContent = currentPlayer;
-        const winningCombo = checkWin();
-        if (winningCombo) {
-            message.textContent = `${currentPlayer === "X" ? playerX : playerO} Wins!`;
-            scores[currentPlayer]++;
+        // Play intro music
+        introMusic.play();
+        setTimeout(() => introMusic.pause(), 3000); // Stop after 3s
+
+        function setNames() {
+            playerX = document.getElementById("playerXName").value.trim() || "Player X";
+            playerO = document.getElementById("playerOName").value.trim() || "Player O";
             updateScoreboard();
-            gameActive = false;
-            highlightWinningCells(winningCombo);
-            return;
+            message.textContent = `${playerX}'s Turn`;
         }
-        if (cells.every(c => c.textContent !== "")) {
-            message.textContent = "It's a Draw!";
-            gameActive = false;
-            return;
+
+        function updateScoreboard() {
+            playerXScoreEl.textContent = `${playerX}: ${scores.X}`;
+            playerOScoreEl.textContent = `${playerO}: ${scores.O}`;
         }
-        
-        currentPlayer = currentPlayer === "X" ? "O" : "X";
-        message.textContent = `${currentPlayer === "X" ? playerX : playerO}'s Turn`;
-    }
 
-    function checkWin() {
-        const winningCombos = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8],
-            [0, 3, 6], [1, 4, 7], [2, 5, 8],
-            [0, 4, 8], [2, 4, 6]
-        ];
-        return winningCombos.find(combination => {
-            const [a, b, c] = combination;
-            return cells[a].textContent && 
-                cells[a].textContent === cells[b].textContent &&
-                cells[a].textContent === cells[c].textContent;
-        }) || null;
-    }
+        function createBoard() {
+            board.innerHTML = "";
+            cells = [];
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement("div");
+                cell.classList.add("cell");
+                cell.classList.remove("winner", "disabled");
+                cell.setAttribute("role", "button");
+                cell.setAttribute("aria-label", `Cell ${i + 1}`);
+                cell.dataset.index = i;
+                cell.addEventListener("click", handleCellClick);
+                board.appendChild(cell);
+                cells.push(cell);
+            }
+        }
 
-    function highlightWinningCells(combo) {
-        combo.forEach(index => cells[index].classList.add("winner"));
-    }
+        function handleCellClick(event) {
+            if (!gameActive || event.target.textContent !== "") return;
 
-    function resetGame() {
-        gameActive = true;
-        currentPlayer = "X";
-        message.textContent = `${playerX}'s Turn`;
-        createBoard();
-    }
+            const cell = event.target;
+            cell.textContent = currentPlayer;
+            cell.classList.add(currentPlayer === "X" ? "x" : "o");
+            const clickSound = new Audio(clickSoundURL);
+            clickSound.play();
+            setTimeout(() => clickSound.pause(), 500);
 
-    createBoard();
-</script>
+            const winningCombo = checkWin();
+            if (winningCombo) {
+                message.textContent = `${currentPlayer === "X" ? playerX : playerO} Wins!`;
+                scores[currentPlayer]++;
+                updateScoreboard();
+                highlightWinningCells(winningCombo);
+                winSound.play();
+                setTimeout(() => winSound.pause(), 1000);
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                endGame();
+                return;
+            }
+            if (cells.every(c => c.textContent !== "")) {
+                message.textContent = "It's a Draw!";
+                drawSound.play();
+                setTimeout(() => drawSound.pause(), 1000);
+                endGame();
+                return;
+            }
 
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            message.textContent = `${currentPlayer === "X" ? playerX : playerO}'s Turn`;
+        }
+
+        function checkWin() {
+            const winningCombos = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            return winningCombos.find(combo => {
+                const [a, b, c] = combo;
+                return cells[a].textContent &&
+                    cells[a].textContent === cells[b].textContent &&
+                    cells[a].textContent === cells[c].textContent;
+            }) || null;
+        }
+
+        function highlightWinningCells(combo) {
+            combo.forEach(index => {
+                cells[index].classList.add("winner");
+                cells[index].style.animation = "winAnimation 1s 3 alternate";
+            });
+        }
+
+        function endGame() {
+            gameActive = false;
+            cells.forEach(cell => cell.classList.add("disabled"));
+        }
+
+        function resetGame() {
+            gameActive = true;
+            currentPlayer = "X";
+            message.textContent = `${playerX}'s Turn`;
+            createBoard();
+        }
+
+        // Start game and background music after intro
+        setTimeout(() => {
+            document.body.style.overflow = "auto";
+            createBoard();
+            updateScoreboard();
+            bgMusic.play(); // Start background music after intro
+        }, 3500);
+    </script>
 </body>
 </html>
